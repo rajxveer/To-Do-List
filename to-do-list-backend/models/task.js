@@ -10,12 +10,10 @@ const Task = sequelize.define("task", {
     },
     name: {
         type: Sequelize.STRING,
-        autoIncrement: true,
         allowNull: false, 
     },
     status: {
         type: Sequelize.STRING,
-        autoIncrement: true,
         allowNull: false,
     },
 });

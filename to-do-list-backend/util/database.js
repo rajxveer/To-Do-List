@@ -1,8 +1,13 @@
 const Sequelize = require("sequelize");
 
-const sequelize = new Sequelize("to_do_list", "root", "root", {
-  dialect: "mysql",
-  host: "localhost", 
-});
+const sequelize = new Sequelize(
+  "todo_db",
+  "root",
+  "password",
+  {
+    dialect: "mysql",
+    host: "192.168.0.100" 
+  }
+);
 
 module.exports = sequelize;
