@@ -14,7 +14,7 @@ const Task = sequelize.define("task", {
     },
     status: {
         type: Sequelize.STRING,
-        allowNull: false,
+        // allowNull: false,
     },
 });
 

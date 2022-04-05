@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-//import axios from 'axios'
 
 defineProps({
    msg: String
@@ -16,8 +15,9 @@ const count = ref(0)
     </h1>
 
     <div class="text-center mt-10">
-      <input v-model="task" type="text" placeholder="Enter your task" class="px-12 py-2 border-solid border-2">
-      <button @click="submitTask" class="px-3 py-1 btn ml-2 border-yellow-500 bg-yellow-500">SUBMIT</button>
+      <input v-model="task.name" type="text" placeholder="Enter your task" class="px-12 py-2 border-solid border-2">
+      <button v-if="!isEdit" @click="submitTask" class="px-3 py-1 btn ml-2 border-yellow-500 bg-yellow-500">SUBMIT</button>
+      <button v-else @click="editTask" class="px-3 py-1 btn ml-2 border-yellow-500 bg-yellow-500">UPDATE</button>
     </div>
 
     <table class="table-auto mt-10" style="margin-right:auto;margin-left:auto">
@@ -37,17 +37,17 @@ const count = ref(0)
             </span>
           </td>
           <td class="border px-4 py-2">
-            <span @click="changeStatus(index)" class="pointer">
+            <span @click="changeStatus(task)" class="pointer">
               {{task.status}}
             </span>
           </td>
           <td>
-            <div @click="editTask(index)" class="text-center">
+            <div @click="changeEdit(task)" class="text-center">
               <span class="fa fa-pen pointer"></span>
             </div>
           </td>
           <td>
-            <div @click="deleteTask(index)" class="text-center">
+            <div @click="deleteTask(task)" class="text-center">
               <span class="fa fa-trash pointer"></span>
             </div>
           </td>
@@ -58,102 +58,101 @@ const count = ref(0)
 </template>
 
 <script>
-
-  import axios from "axios";
+  import ToDoListDataService from "../services/ToDoListDataService";
 
   export default {
     data() {
       return {
-        task: '',
+        task: {
+          id: null,
+          name: "",
+          status: "To-do",
+        },
+        isEdit: false,
         editedTask: null,
         availableStatuses: ['To-do', 'In-progress', 'Done'],
-
-        tasks: [
-        {
-          name: 'Eat breakfast',
-          status: 'In-progress'
-        },
-        {
-          name: 'Workout at the gym',
-          status: 'To-do'
-        },
-        ]
+        tasks: []
       }
     },
 
     methods: {
-      submitTask() {
-        if(this.task.length === 0) return;
 
-        if(this.editedTask === null) {
-          this.tasks.push({
-            name: this.task,
-            status: 'To-do'
-          });
-        } else {
-          this.tasks[this.editedTask].name = this.task;
-          this.editedTask = null;
-        }
-
-        this.task='';
-      }, 
-
-      deleteTask(index) {
-        this.tasks.splice(index, 1);
-      }, 
-
-      editTask(index) {
-        this.task = this.tasks[index].name;
-        this.editedTask = index;
-      }, 
-
-      changeStatus(index) {
-        let newIndex = this.availableStatuses.indexOf(this.tasks[index].status);
-        if(++newIndex > 2) newIndex = 0;
-        this.tasks[index].status = this.availableStatuses[newIndex];
+     getTask() {
+        ToDoListDataService.getAll()
+        .then((response)=> 
+        {this.tasks = response.data;
+        console.log(response.data)})
       },
+
+      changeEdit(task){
+        this.task = task;
+        this.isEdit = true;
+        this.task.name =task.name; 
+      },
+
+      submitTask() {
+        const data = {
+          name : this.task.name,
+          status: "To-do"
+        };
+        ToDoListDataService.create(data)
+        .then((response)=>
+        {
+          console.log(response.data);
+          // Refresh the To-Do List
+          this.getTask();
+          // Clear the task input
+          this.submitted = false;
+          this.task = {};
+        })
+        .catch((e) => {
+          console.log(e);
+        })
+      }, 
+
+      deleteTask(tasks) {
+        ToDoListDataService.delete(tasks.id)
+        .then((response)=>
+        {
+          console.log(response.data);
+          this.getTask();
+        })
+        .catch((e) => {
+          console.log(e);
+        });
+      }, 
+
+      editTask() {
+        this.isEdit = false;
+         ToDoListDataService.update(this.task.id, this.task)
+         .then((response) => {   
+           console.log(response.data);
+           this.task = {};
+          })
+          .catch((e) => {
+            console.log(e);
+          });
+      },
+
+      changeStatus(task) {
+        let newIndex = this.availableStatuses.indexOf(task.status);
+        if(++newIndex > 2) newIndex = 0;
+        task.status = this.availableStatuses[newIndex];
+        ToDoListDataService.update(task.id, task)
+        .then((response) => {
+          console.log(response.data);
+        })
+        .catch((e) => {
+          console.log(e);
+        });
+      },
+    },
+
+    mounted() {
+      this.getTask();
     }
   };
 </script>
-
-<!--
-<script>  
-  export default {
-    name: "TaskList",
-    data() {
-      return {
-        items: [],
-      };
-    },
-  
-    created() {
-      this.getTasks();
-    },
-  
-    methods: {
-      // Get All Tasks
-      async getTasks() {
-        try {
-          const response = await axios.get("http://localhost:3000/task");
-          this.tasks = response.data;
-        } catch (err) {
-          console.log(err);
-        }
-      },
-  
-      // Delete Task
-      async deleteTask(index) {
-        try {
-          await axios.delete(`http://localhost:3000/task/${index}`);
-          this.getTasks();
-        } catch (err) {
-          console.log(err);
-        }
-      },
-    },
-  };
-</script>
--->
 
 <style scoped>
 a {
